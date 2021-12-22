@@ -60,6 +60,7 @@ def Cardseg(rois, colors, save_path):
     '''
     seg_dic = {}
     old_seg_dic = {}
+    predict_result_dic = {}
     for i, color in enumerate(colors):
         if color in ("blue", "yello", "green"):
             card_img = rois[i]
@@ -106,9 +107,8 @@ def Cardseg(rois, colors, save_path):
             max_wave_dis = wave[1] - wave[0]
 
             # 判断是否是左侧车牌边缘
-            if (
-                wave_peaks[0][1] - wave_peaks[0][0] < max_wave_dis / 3
-                and wave_peaks[0][0] == 0
+            if (wave_peaks[0][1] - wave_peaks[0][0] < max_wave_dis / 3) and (
+                wave_peaks[0][0] == 0
             ):
                 wave_peaks.pop(0)
 
@@ -119,7 +119,7 @@ def Cardseg(rois, colors, save_path):
                     break
                 else:
                     cur_dis += wave[1] - wave[0]
-            if i > 0:
+            if i > 0:  # 说明合并汉字了
                 wave = (wave_peaks[0][0], wave_peaks[i][1])
                 wave_peaks = wave_peaks[i + 1 :]
                 wave_peaks.insert(0, wave)
@@ -171,13 +171,16 @@ def Cardseg(rois, colors, save_path):
                 # # 保存图片
                 # cv2.imwrite(os.path.join(save_path,str(i)+".jpg"),part_card)
 
-            seg_dic[i] = part_cards
-            old_seg_dic[i] = part_card_old
-    return seg_dic, old_seg_dic, predict_result
+            seg_dic[i] = part_cards  # 键：第几个框，值：一个列表，包含所有分割字符
+            old_seg_dic[i] = part_card_old  # 值：保留最后一个原字符
+            predict_result_dic[i] = predict_result
+    return seg_dic, old_seg_dic, predict_result_dic
 
 
 if __name__ == "__main__":
     for pic_file in os.listdir("./test_img"):
+        if pic_file == 'result':
+            continue
         roi, label, color = CaridDetect(os.path.join("./test_img", pic_file))
 
         save_path = "./result_seg/" + pic_file.split(".")[0]
